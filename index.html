@@ -110,9 +110,9 @@
             ตัวกรองข้อมูล:
         </div>
 
-        <!-- Filter: Team -->
+        <!-- Filter: Team (Column AQ) -->
         <div class="flex items-center gap-1.5">
-            <label class="text-xs text-slate-600 font-medium">ทีม:</label>
+            <label class="text-xs text-slate-600 font-medium">ทีม (Col AQ):</label>
             <select v-model="selectedTeam" class="py-1.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-slate-700">
                 <option value="ALL">ทุกทีม</option>
                 <option v-for="team in teamList" :key="team" :value="team">{{ team }}</option>
@@ -137,7 +137,7 @@
             <label class="text-xs text-slate-600 font-medium">รอบการประชุม คตส.:</label>
             <select v-model="selectedCtsCycle" class="py-1.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-slate-700">
                 <option value="ALL">ทุกรอบการประชุม</option>
-                <option v-for="cycle in ctsCycleList" :key="cycle" :value="cycle">{{ cycle.replace('-', '/') }}</option>
+                <option v-for="cycle in ctsCycleList" :key="cycle" :value="cycle">{{ cycle }}</option>
             </select>
         </div>
 
@@ -173,7 +173,72 @@
         </button>
     </div>
 
-    <!-- Section: Graph Showing Status Distribution across 4 Main Phases (Full Width Screen) -->
+    <!-- NEW SECTION: Donut Chart Showing Overall Completion Rate (Placed Above Phase Bar Chart) -->
+    <section class="w-full bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+                <h2 class="text-base md:text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-emerald-600"></i>
+                    แผนภูมิแสดงสัดส่วนส่วนงานที่ดำเนินการเสร็จสมบูรณ์ (คอลัมน์ AL)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    เปรียบเทียบสัดส่วนระหว่างส่วนงานที่ดำเนินการเสร็จสมบูรณ์แล้ว (มีวันที่ใน Col AL) กับส่วนงานที่อยู่ระหว่างดำเนินการ
+                </p>
+            </div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-800 shrink-0">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                <span>อัตราร้อยละความสำเร็จ: <strong>{{ completionRate.toFixed(1) }}%</strong> ({{ completedCount }}/{{ totalUnits }} ส่วนงาน)</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center w-full">
+            <!-- Donut Canvas Container -->
+            <div class="lg:col-span-2 relative h-64 w-full flex justify-center items-center">
+                <canvas id="completionDonutChart"></canvas>
+            </div>
+
+            <!-- KPI Cards Beside Donut Chart -->
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                <div class="p-4 bg-emerald-50/80 rounded-xl border border-emerald-200/80 space-y-1 shadow-2xs">
+                    <div class="text-xs font-semibold text-emerald-800 flex items-center justify-between">
+                        <span>เสร็จสมบูรณ์แล้ว (Col AL)</span>
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                    </div>
+                    <div class="text-2xl font-black text-emerald-950">{{ completedCount }} <span class="text-xs font-normal text-emerald-700">ส่วนงาน</span></div>
+                    <div class="text-[11px] text-emerald-700 font-medium">คิดเป็น {{ completionRate.toFixed(1) }}% ของทั้งหมด</div>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
+                    <div class="text-xs font-semibold text-slate-600 flex items-center justify-between">
+                        <span>อยู่ระหว่างดำเนินการ</span>
+                        <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
+                    </div>
+                    <div class="text-2xl font-black text-slate-800">{{ inProgressCount }} <span class="text-xs font-normal text-slate-500">ส่วนงาน</span></div>
+                    <div class="text-[11px] text-slate-500 font-medium">คิดเป็น {{ totalUnits > 0 ? ((inProgressCount/totalUnits)*100).toFixed(1) : 0 }}% ของทั้งหมด</div>
+                </div>
+
+                <div class="p-4 bg-blue-50/80 rounded-xl border border-blue-200/80 space-y-1 shadow-2xs">
+                    <div class="text-xs font-semibold text-blue-800 flex items-center justify-between">
+                        <span>วันตรวจจริงเฉลี่ย (2.3)</span>
+                        <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
+                    </div>
+                    <div class="text-2xl font-black text-blue-950">{{ overallAvgAuditDays.toFixed(1) }} <span class="text-xs font-normal text-blue-700">วัน</span></div>
+                    <div class="text-[11px] text-blue-700 font-medium">คำนวณจาก Col K - Col J (หักวันหยุด)</div>
+                </div>
+
+                <div class="p-4 bg-indigo-50/80 rounded-xl border border-indigo-200/80 space-y-1 shadow-2xs">
+                    <div class="text-xs font-semibold text-indigo-800 flex items-center justify-between">
+                        <span>วันเสนอ คตส. เฉลี่ย (2.5)</span>
+                        <i data-lucide="award" class="w-4 h-4 text-indigo-600"></i>
+                    </div>
+                    <div class="text-2xl font-black text-indigo-950">{{ overallAvgCtsDays.toFixed(1) }} <span class="text-xs font-normal text-indigo-700">วัน</span></div>
+                    <div class="text-[11px] text-indigo-700 font-medium">คำนวณจาก Col AG - Col AB</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section: Graph Showing Status Distribution across 4 Main Phases -->
     <section class="w-full bg-white rounded-2xl p-5 md:p-6 border border-slate-200/80 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
@@ -360,11 +425,11 @@
                                  :class="u.isCompleted ? 'bg-emerald-100/90 border-emerald-300 text-emerald-950 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-800'">
                                 <div class="flex items-center justify-between gap-1">
                                     <span class="line-clamp-1">{{ u.name }}</span>
-                                    <i v-if="u.isCompleted" data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0" style="color: #83A370;"></i>
+                                    <i v-if="u.isCompleted" data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0 text-emerald-600"></i>
                                 </div>
                                 <div class="text-[10px] text-emerald-900 mt-1 flex justify-between items-center">
                                     <span class="font-medium bg-emerald-200/60 px-1.5 py-0.5 rounded">{{ u.team }}</span>
-                                    <span class="font-bold" style="color: #436331;">({{ u.latestDate }})</span>
+                                    <span class="font-bold text-emerald-800">({{ u.latestDate }})</span>
                                 </div>
                             </div>
                         </div>
@@ -454,9 +519,8 @@
                         </th>
                         <th class="py-3 px-4 text-center min-w-[140px]">
                             2.4 ปิดตรวจ &rarr; อธิการบดี
-                            <span class="block text-[10px] font-normal text-slate-500">(AE - AB)</span>
+                            <span class="block text-[10px] font-normal text-slate-500">(AD - AB)</span>
                         </th>
-                        <!-- Updated 2.5 Header & Cell structure -->
                         <th class="py-3 px-4 text-center min-w-[160px]">
                             2.5 ปิดตรวจ &rarr; คตส.
                             <span class="block text-[10px] font-normal text-slate-500">(ครั้งที่ประชุม AH / วัน AG-AB)</span>
@@ -502,10 +566,10 @@
                             </span>
                         </td>
 
-                        <!-- 2.4 AB to AE Duration -->
+                        <!-- 2.4 AB to AD Duration -->
                         <td class="py-3 px-4 text-center">
-                            <span v-if="u.aeDuration !== null" class="font-medium text-slate-700">
-                                {{ u.aeDuration }} วัน
+                            <span v-if="u.adDuration !== null" class="font-medium text-slate-700">
+                                {{ u.adDuration }} วัน
                             </span>
                             <span v-else class="text-slate-300">-</span>
                         </td>
@@ -516,7 +580,7 @@
                                 <!-- Line 1: Meeting Cycle from Col AH -->
                                 <div class="text-xs font-bold text-slate-700">
                                     <span v-if="u.colAH" class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-800">
-                                        ครั้งที่ {{ u.colAH.replace('-', '/') }}
+                                        ครั้งที่ {{ u.colAH.startsWith('ครั้งที่') ? u.colAH.replace('ครั้งที่', '').trim() : u.colAH }}
                                     </span>
                                     <span v-else class="text-slate-300">-</span>
                                 </div>
@@ -551,6 +615,19 @@
     </section>
 
     <!-- Modal Data Management -->
+    <div v-if="isModalOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4 text-brand-600"></i>
+                    จัดการข้อมูลส่วนงานและวันหยุด
+                </h3>
+                <button @click="isModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
             <!-- Modal Content (Tab & Table) -->
             <div class="p-4 overflow-y-auto flex-1 space-y-4 text-xs">
                 <!-- Holidays Config (Column AP4) -->
@@ -572,13 +649,14 @@
                         <thead class="bg-slate-100 font-bold text-slate-700">
                             <tr>
                                 <th class="p-2 border-b min-w-[160px]">คอลัมน์ B: ส่วนงาน</th>
-                                <th class="p-2 border-b w-24">ทีม</th>
+                                <th class="p-2 border-b w-28">คอลัมน์ AQ: ทีม</th>
                                 <th class="p-2 border-b w-28">Col J: เริ่มตรวจ</th>
                                 <th class="p-2 border-b w-28">Col K: สิ้นสุดตรวจ</th>
                                 <th class="p-2 border-b w-24">ไม่เข้าตรวจ (วัน)</th>
                                 <th class="p-2 border-b w-28">Col AB: ปิดตรวจ</th>
                                 <th class="p-2 border-b w-28">Col AE: เสนออธิการ</th>
                                 <th class="p-2 border-b w-28">Col AG: เสนอ คตส.</th>
+                                <th class="p-2 border-b w-20">Col AH: ครั้ง คตส.</th>
                                 <th class="p-2 border-b w-28">Col AL: แจ้งผล (เสร็จ)</th>
                             </tr>
                         </thead>
@@ -605,7 +683,7 @@
                 <button @click="addNewRow" class="px-3 py-1.5 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg flex items-center gap-1">
                     <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มส่วนงาน
                 </button>
-                <button @click="isModalOpen = false" class="px-4 py-2 text-xs bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-sm">
+                <button @click="isModalOpen = false" class="px-4 py-2 text-xs bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-xs">
                     บันทึกและประมวลผล
                 </button>
             </div>
@@ -629,7 +707,8 @@ createApp({
         const selectedMonth = ref('ALL');
 
         const fileInput = ref(null);
-        let chartInstance = null;
+        let barChartInstance = null;
+        let donutChartInstance = null;
 
         const thaiMonths = [
             'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -671,7 +750,126 @@ createApp({
             ]
         };
 
-        // Raw Audit Data including Column AH (ครั้งที่ประชุม คตส.)
+        // Robust Date Parser function for Thai string dates, Excel serials, ISO dates, and slashes
+        const parseThaiDate = (val) => {
+            if (val === null || val === undefined) return null;
+            if (typeof val === 'number') {
+                // Excel Date Serial Number (e.g. 45580 = 2025-10-15)
+                if (val > 25000 && val < 60000) {
+                    return new Date(Math.round((val - 25569) * 86400 * 1000));
+                }
+                return null;
+            }
+            if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+
+            let str = String(val).trim();
+            if (!str || str === '-' || str === '0') return null;
+
+            // ISO YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+                const d = new Date(str);
+                return isNaN(d.getTime()) ? null : d;
+            }
+
+            const thaiMonthsFull = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+            const thaiMonthsShort = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+            // Slash / Dash separation e.g. 15/10/2568 or 15/10/2025
+            if (str.includes('/') || (str.includes('-') && !/^\d{4}/.test(str))) {
+                const parts = str.split(/[\/\-]/);
+                if (parts.length === 3) {
+                    let day = parseInt(parts[0], 10);
+                    let month = parseInt(parts[1], 10) - 1;
+                    let year = parseInt(parts[2], 10);
+                    if (year > 2400) year -= 543;
+                    else if (year < 100) year += 2000;
+                    const d = new Date(year, month, day);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+            }
+
+            // Thai Text Parsing e.g. "15 ตุลาคม 2568" or "15 ต.ค. 2568"
+            const tokens = str.split(/\s+/);
+            if (tokens.length >= 3) {
+                let day = parseInt(tokens[0], 10);
+                let monthStr = tokens[1];
+                let year = parseInt(tokens[2], 10);
+
+                let monthIndex = thaiMonthsFull.findIndex(m => monthStr.includes(m));
+                if (monthIndex === -1) {
+                    monthIndex = thaiMonthsShort.findIndex(m => monthStr.includes(m.replace('.', '')));
+                }
+                if (monthIndex === -1) {
+                    const cleanM = monthStr.replace(/\./g, '');
+                    const cleanShorts = thaiMonthsShort.map(m => m.replace(/\./g, ''));
+                    monthIndex = cleanShorts.indexOf(cleanM);
+                }
+
+                if (!isNaN(day) && monthIndex !== -1 && !isNaN(year)) {
+                    if (year > 2400) year -= 543;
+                    const d = new Date(year, monthIndex, day);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+            }
+
+            const fallback = new Date(str);
+            return isNaN(fallback.getTime()) ? null : fallback;
+        };
+
+        const toIsoDateStr = (val) => {
+            const d = parseThaiDate(val);
+            if (!d) return null;
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const formatThaiDate = (val) => {
+            const d = parseThaiDate(val);
+            if (!d) return '';
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            const yearThai = d.getFullYear() + 543;
+            return `${d.getDate()} ${months[d.getMonth()]} ${yearThai}`;
+        };
+
+        const countDaysBetween = (d1Val, d2Val) => {
+            const d1 = parseThaiDate(d1Val);
+            const d2 = parseThaiDate(d2Val);
+            if (!d1 || !d2) return null;
+            const diffTime = d2.getTime() - d1.getTime();
+            if (diffTime < 0) return 0;
+            return Math.round(diffTime / (1000 * 60 * 60 * 24));
+        };
+
+        const calculateActualAuditDays = (u) => {
+            const start = parseThaiDate(u.colJ);
+            const end = parseThaiDate(u.colK);
+            if (!start || !end || start > end) return 0;
+
+            let totalCalendarDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            let weekendCount = 0;
+            let holidayCount = 0;
+
+            let cur = new Date(start.getTime());
+            while (cur <= end) {
+                const dayOfWeek = cur.getDay();
+                const isoStr = cur.toISOString().split('T')[0];
+
+                if (dayOfWeek === 0 || dayOfWeek === 6) {
+                    weekendCount++;
+                } else if (publicHolidaysList.value.includes(isoStr)) {
+                    holidayCount++;
+                }
+                cur.setDate(cur.getDate() + 1);
+            }
+
+            const interrupted = u.interruptedCount || 0;
+            let netDays = totalCalendarDays - weekendCount - holidayCount - interrupted;
+            return Math.max(0, netDays);
+        };
+
+        // Raw Audit Data
         const rawUnits = ref([
             {
                 id: 1, name: 'ศูนย์บริการวิชาการและถ่ายทอดเทคโนโลยีการเกษตร คณะเกษตรศาสตร์', team: 'ทีม 1',
@@ -844,53 +1042,6 @@ createApp({
             selectedMonth.value = 'ALL';
         };
 
-        // Date & Thai Formatting Helpers
-        const formatThaiDate = (dateStr) => {
-            if (!dateStr) return '';
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr;
-            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            const yearThai = d.getFullYear() + 543;
-            return `${d.getDate()} ${months[d.getMonth()]} ${yearThai}`;
-        };
-
-        const countDaysBetween = (d1Str, d2Str) => {
-            if (!d1Str || !d2Str) return null;
-            const d1 = new Date(d1Str);
-            const d2 = new Date(d2Str);
-            const diffTime = d2 - d1;
-            if (diffTime < 0) return 0;
-            return Math.round(diffTime / (1000 * 60 * 60 * 24));
-        };
-
-        const calculateActualAuditDays = (u) => {
-            if (!u.colJ || !u.colK) return 0;
-            const start = new Date(u.colJ);
-            const end = new Date(u.colK);
-            if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0;
-
-            let totalCalendarDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-            let weekendCount = 0;
-            let holidayCount = 0;
-
-            let cur = new Date(start);
-            while (cur <= end) {
-                const dayOfWeek = cur.getDay();
-                const isoStr = cur.toISOString().split('T')[0];
-
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    weekendCount++;
-                } else if (publicHolidaysList.value.includes(isoStr)) {
-                    holidayCount++;
-                }
-                cur.setDate(cur.getDate() + 1);
-            }
-
-            const interrupted = u.interruptedCount || 0;
-            let netDays = totalCalendarDays - weekendCount - holidayCount - interrupted;
-            return Math.max(0, netDays);
-        };
-
         const getUnitStatusDetails = (u) => {
             const priorityList = [
                 { col: 'Col AL', key: 'colAL', phaseKey: '1.4', phase: 'ชี้แจงผลการดำเนินงาน', label: 'แจ้งหน่วยรับตรวจ (เสร็จสมบูรณ์)', isCompleted: true },
@@ -936,12 +1087,11 @@ createApp({
             };
         };
 
-        // Processed Units Calculation
         const processedUnits = computed(() => {
             return rawUnits.value.map(u => {
                 const statusInfo = getUnitStatusDetails(u);
                 const actualAuditDays = calculateActualAuditDays(u);
-                const aeDuration = countDaysBetween(u.colAB, u.colAE);
+                const adDuration = countDaysBetween(u.colAB, u.colAD);
                 const ctsDuration = countDaysBetween(u.colAB, u.colAG);
 
                 let isWarning = false;
@@ -954,10 +1104,12 @@ createApp({
 
                 let weekendDays = 0;
                 let holidayDays = 0;
-                if (u.colJ && u.colK) {
-                    let cur = new Date(u.colJ);
-                    const end = new Date(u.colK);
-                    while (cur <= end) {
+                const dJ = parseThaiDate(u.colJ);
+                const dK = parseThaiDate(u.colK);
+
+                if (dJ && dK) {
+                    let cur = new Date(dJ.getTime());
+                    while (cur <= dK) {
                         const dow = cur.getDay();
                         const isoStr = cur.toISOString().split('T')[0];
                         if (dow === 0 || dow === 6) weekendDays++;
@@ -966,23 +1118,18 @@ createApp({
                     }
                 }
 
-                // Fiscal Year & Month calculation based on latest active date or colJ
-                const refDateStr = statusInfo.rawDate || u.colJ || u.colG;
+                const refDate = parseThaiDate(statusInfo.rawDate || u.colJ || u.colG);
                 let refYear = null;
                 let refMonth = null;
                 let fiscalYear = null;
 
-                if (refDateStr) {
-                    const d = new Date(refDateStr);
-                    if (!isNaN(d.getTime())) {
-                        refYear = d.getFullYear();
-                        refMonth = d.getMonth() + 1; // 1-12
-                        // Thai Fiscal Year: Oct 2025 to Sep 2026 is FY 2569
-                        if (refMonth >= 10) {
-                            fiscalYear = (refYear + 544).toString(); // e.g. Oct 2025 -> 2025+544 = 2569
-                        } else {
-                            fiscalYear = (refYear + 543).toString(); // e.g. Jan 2026 -> 2026+543 = 2569
-                        }
+                if (refDate) {
+                    refYear = refDate.getFullYear();
+                    refMonth = refDate.getMonth() + 1; // 1-12
+                    if (refMonth >= 10) {
+                        fiscalYear = (refYear + 544).toString();
+                    } else {
+                        fiscalYear = (refYear + 543).toString();
                     }
                 }
 
@@ -996,7 +1143,7 @@ createApp({
                     isCompleted: statusInfo.isCompleted,
                     phaseTitle: statusInfo.phaseTitle,
                     actualAuditDays,
-                    aeDuration,
+                    adDuration,
                     ctsDuration,
                     isWarning,
                     weekendDays,
@@ -1008,7 +1155,6 @@ createApp({
             });
         });
 
-        // Filtered Units based on Search and 5 Dropdowns
         const filteredUnits = computed(() => {
             return processedUnits.value.filter(u => {
                 const matchSearch = searchQuery.value === '' || u.name.toLowerCase().includes(searchQuery.value.toLowerCase());
@@ -1032,6 +1178,7 @@ createApp({
         // Overall KPIs
         const totalUnits = computed(() => processedUnits.value.length);
         const completedCount = computed(() => processedUnits.value.filter(u => u.isCompleted).length);
+        const inProgressCount = computed(() => totalUnits.value - completedCount.value);
         const completionRate = computed(() => totalUnits.value > 0 ? (completedCount.value / totalUnits.value) * 100 : 0);
 
         const overallAvgAuditDays = computed(() => {
@@ -1080,16 +1227,62 @@ createApp({
             return sorted[0];
         });
 
-        // Render Chart.js
-        const renderChart = () => {
+        // Render Donut Chart for Overall Completion
+        const renderDonutChart = () => {
+            const ctx = document.getElementById('completionDonutChart');
+            if (!ctx) return;
+
+            if (donutChartInstance) {
+                donutChartInstance.destroy();
+            }
+
+            const completed = completedCount.value;
+            const inProgress = inProgressCount.value;
+
+            donutChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['เสร็จสมบูรณ์แล้ว (Col AL)', 'อยู่ระหว่างดำเนินการ'],
+                    datasets: [{
+                        data: [completed, inProgress],
+                        backgroundColor: ['#83A370', '#CBD5E1'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Sarabun', size: 12 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` ${context.label}: ${context.raw} ส่วนงาน (${totalUnits.value > 0 ? ((context.raw/totalUnits.value)*100).toFixed(1) : 0}%)`
+                            }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+        };
+
+        // Render Bar Chart for Main Phase Bottlenecks
+        const renderBarChart = () => {
             const ctx = document.getElementById('phaseStatusChart');
             if (!ctx) return;
 
-            if (chartInstance) {
-                chartInstance.destroy();
+            if (barChartInstance) {
+                barChartInstance.destroy();
             }
 
-            chartInstance = new Chart(ctx, {
+            barChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: phaseChartStats.value.map(s => s.name),
@@ -1127,8 +1320,13 @@ createApp({
             });
         };
 
+        const renderCharts = () => {
+            renderDonutChart();
+            renderBarChart();
+        };
+
         watch(filteredUnits, () => {
-            nextTick(() => renderChart());
+            nextTick(() => renderCharts());
         }, { deep: true });
 
         // Team Metrics
@@ -1155,10 +1353,10 @@ createApp({
             const exportData = processedUnits.value.map(u => ({
                 'ลำดับ': u.id,
                 'ชื่อส่วนงาน (Col B)': u.name,
-                'ทีม': u.team,
+                'ทีม (Col AQ)': u.team,
                 'สถานะล่าสุด': u.statusFormatted,
                 'วันตรวจจริง (วัน)': u.actualAuditDays,
-                'ปิดตรวจ->เสนออธิการ (วัน)': u.aeDuration ?? '-',
+                'ปิดตรวจ->เสนออธิการ (วัน)': u.adDuration ?? '-',
                 'ครั้งที่ประชุม คตส. (Col AH)': u.colAH ?? '-',
                 'ปิดตรวจ->เสนอ คตส. (วัน)': u.ctsDuration ?? '-',
                 'สถานะเตือน': u.ctsDuration > 60 ? 'เกิน 60 วัน' : (u.isWarning ? 'เตือน >= 50 วัน' : 'ปกติ')
@@ -1179,44 +1377,96 @@ createApp({
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                     if (jsonData.length < 2) return;
 
-                    // Parse uploaded rows starting after header
+                    const getCleanVal = (val) => {
+                        if (val === undefined || val === null) return null;
+                        const str = String(val).trim();
+                        if (!str || str === '-' || str === '0') return null;
+                        return val;
+                    };
+
                     const newUnits = [];
-                    for (let i = 1; i < jsonData.length; i++) {
+                    for (let i = 0; i < jsonData.length; i++) {
                         const row = jsonData[i];
-                        if (!row || !row[1]) continue; // Needs unit name
+                        if (!row || !row[1]) continue;
+
+                        const unitNameStr = String(row[1]).trim();
+                        // ข้ามแถวที่เป็นหัวตาราง
+                        if (unitNameStr.includes('หน่วยรับตรวจ') || unitNameStr.includes('ส่วนงาน') || unitNameStr === 'ชื่อส่วนงาน') continue;
+                        if (typeof row[0] === 'string' && (row[0].includes('ลำดับ') || row[0].includes('ทีม'))) continue;
+
+                        const teamVal = getCleanVal(row[42]) ? String(row[42]).trim() : (getCleanVal(row[2]) ? String(row[2]).trim() : 'ทีม 1');
+
+                        let interruptedCount = 0;
+                        if (row[20] !== undefined && !isNaN(Number(row[20])) && Number(row[20]) > 0) {
+                            interruptedCount = Number(row[20]);
+                        } else {
+                            for (let colIdx = 12; colIdx <= 19; colIdx++) {
+                                if (row[colIdx] && String(row[colIdx]).trim() !== '' && String(row[colIdx]).trim() !== '0') {
+                                    interruptedCount++;
+                                }
+                            }
+                        }
+
+                        // ระบุดัชนีคอลัมน์ที่ถูกต้องตรงตามโครงสร้าง Excel (0-indexed)
+                        const colGVal = getCleanVal(row[6]);   // Col G (มอบหมายงาน)
+                        const colHVal = getCleanVal(row[7]);   // Col H (แจ้งเข้าตรวจ)
+                        const colIVal = getCleanVal(row[8]);   // Col I (อนุมัติแผน)
+                        const colJVal = getCleanVal(row[9]);   // Col J (เปิดตรวจ/เริ่มตรวจสอบ)
+                        const colKVal = getCleanVal(row[10]);  // Col K (สิ้นสุดตรวจสอบ)
+                        const colABVal = getCleanVal(row[27]); // Col AB (ประชุมปิดตรวจ)
+                        const colADVal = getCleanVal(row[29]); // Col AD (เสนออธิการบดี - รายงานผล)
+                        const colAEVal = getCleanVal(row[30]); // Col AE (เสนออธิการบดี - ปิดตรวจ)
+                        const colAFVal = getCleanVal(row[31]); // Col AF (แจ้งหน่วยรับตรวจ - รายงานผล)
+                        const colAGVal = getCleanVal(row[32]); // Col AG (เสนอ คตส.)
+                        
+                        // ดึงข้อความดิบจากคอลัมน์ AH (ครั้งที่ประชุม คตส.) โดยตรง ไม่ผ่านการแปลงเป็น Date
+                        const cellAH = worksheet[XLSX.utils.encode_cell({ r: i, c: 33 })];
+                        let colAHVal = null;
+                        if (cellAH) {
+                            colAHVal = cellAH.w ? String(cellAH.w).trim() : (cellAH.v !== undefined && cellAH.v !== null ? String(cellAH.v).trim() : null);
+                        } else if (getCleanVal(row[33])) {
+                            colAHVal = String(row[33]).trim();
+                        }
+                        if (colAHVal && (colAHVal.includes('GMT') || colAHVal.includes('Indochina Time'))) {
+                            colAHVal = null;
+                        }
+
+                        const colAJVal = getCleanVal(row[35]); // Col AJ (หน่วยรับตรวจชี้แจง)
+                        const colAKVal = getCleanVal(row[36]); // Col AK (เสนออธิการบดี - ชี้แจง)
+                        const colALVal = getCleanVal(row[37]); // Col AL (แจ้งหน่วยรับตรวจ - เสร็จสมบูรณ์)
 
                         newUnits.push({
-                            id: i,
-                            name: String(row[1] || `ส่วนงานที่ ${i}`),
-                            team: String(row[2] || 'ทีม 1'),
-                            colG: row[3] || null,
-                            colH: row[4] || null,
-                            colI: row[5] || null,
-                            colJ: row[6] || null,
-                            colK: row[7] || null,
-                            interruptedCount: Number(row[8]) || 0,
-                            colAB: row[9] || null,
-                            colAD: row[10] || null,
-                            colAE: row[11] || null,
-                            colAF: row[12] || null,
-                            colAG: row[13] || null,
-                            colAH: row[14] ? String(row[14]) : null,
-                            colAJ: row[15] || null,
-                            colAK: row[16] || null,
-                            colAL: row[17] || null
+                            id: newUnits.length + 1,
+                            name: unitNameStr,
+                            team: teamVal,
+                            colG: toIsoDateStr(colGVal) || colGVal,
+                            colH: toIsoDateStr(colHVal) || colHVal,
+                            colI: toIsoDateStr(colIVal) || colIVal,
+                            colJ: toIsoDateStr(colJVal) || colJVal,
+                            colK: toIsoDateStr(colKVal) || colKVal,
+                            interruptedCount: interruptedCount,
+                            colAB: toIsoDateStr(colABVal) || colABVal,
+                            colAD: toIsoDateStr(colADVal) || colADVal,
+                            colAE: toIsoDateStr(colAEVal) || colAEVal,
+                            colAF: toIsoDateStr(colAFVal) || colAFVal,
+                            colAG: toIsoDateStr(colAGVal) || colAGVal,
+                            colAH: colAHVal,
+                            colAJ: toIsoDateStr(colAJVal) || colAJVal,
+                            colAK: toIsoDateStr(colAKVal) || colAKVal,
+                            colAL: toIsoDateStr(colALVal) || colALVal
                         });
                     }
 
                     if (newUnits.length > 0) {
                         rawUnits.value = newUnits;
-                        alert(`นำเข้าข้อมูลสำเร็จจำนวน ${newUnits.length} รายการ`);
+                        alert(`นำเข้าข้อมูลสำเร็จจำนวน ${newUnits.length} รายการ (ประมวลผล Col AL ถูกต้องแล้ว)`);
                     }
                 } catch (err) {
                     console.error(err);
@@ -1247,7 +1497,7 @@ createApp({
         onMounted(() => {
             updateHolidays();
             lucide.createIcons();
-            nextTick(() => renderChart());
+            nextTick(() => renderCharts());
         });
 
         return {
@@ -1271,6 +1521,7 @@ createApp({
             filteredUnits,
             totalUnits,
             completedCount,
+            inProgressCount,
             completionRate,
             overallAvgAuditDays,
             overallAvgCtsDays,
